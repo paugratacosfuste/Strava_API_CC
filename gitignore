@@ -357,11 +357,4 @@ sample_data/
 .deploy/
 deploy_output/
 
-# ============================================
-# Optional: Keep these files
-# ============================================
 
-# Keep example files
-!example.env
-!.env.example
-!example_config.json
