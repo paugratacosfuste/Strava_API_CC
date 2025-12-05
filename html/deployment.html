@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strava Analytics Dashboard - AWS Deployment Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --strava-orange: #FC4C02;
+            --strava-orange-light: #FF6B35;
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1e1e1e;
+            --bg-card: #1a1a1a;
+            --border-color: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --code-bg: #0d1117;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            padding: 0 40px;
+        }
+
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--strava-orange);
+        }
+
+        .nav-logo svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 140px 40px 80px;
+            text-align: center;
+            background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(252, 76, 2, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .hero-badge span {
+            color: var(--strava-orange);
+            font-weight: 600;
+        }
+
+        .hero h1 {
+            font-size: clamp(40px, 6vw, 64px);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, var(--strava-orange), var(--strava-orange-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 60px;
+        }
+
+        .toc h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .toc-item:hover {
+            border-color: var(--strava-orange);
+            transform: translateX(4px);
+        }
+
+        .toc-number {
+            width: 28px;
+            height: 28px;
+            background: var(--strava-orange);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .toc-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 80px;
+            scroll-margin-top: 100px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-number {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--strava-orange), var(--strava-orange-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .section h2 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 32px 0 16px;
+            color: var(--strava-orange);
+        }
+
+        .section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 24px 0 12px;
+            color: var(--text-primary);
+        }
+
+        .section p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: var(--bg-tertiary);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .code-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .code-copy {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .code-copy:hover {
+            background: var(--strava-orange);
+            color: white;
+            border-color: var(--strava-orange);
+        }
+
+        .code-content {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .code-content pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #e6edf3;
+            margin: 0;
+            white-space: pre;
+        }
+
+        .code-content .comment {
+            color: #8b949e;
+        }
+
+        .code-content .keyword {
+            color: #ff7b72;
+        }
+
+        .code-content .string {
+            color: #a5d6ff;
+        }
+
+        .code-content .variable {
+            color: #ffa657;
+        }
+
+        /* Inline Code */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-tertiary);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--strava-orange-light);
+        }
+
+        /* Info Boxes */
+        .info-box {
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+            display: flex;
+            gap: 16px;
+        }
+
+        .info-box.tip {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .info-box.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .info-box.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .info-box.info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .info-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .info-box.tip .info-icon { background: var(--success); }
+        .info-box.warning .info-icon { background: var(--warning); }
+        .info-box.danger .info-icon { background: var(--error); }
+        .info-box.info .info-icon { background: var(--info); }
+
+        .info-content h4 {
+            margin: 0 0 8px 0;
+            font-size: 15px;
+        }
+
+        .info-content p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 24px 0;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--bg-tertiary);
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        li strong {
+            color: var(--text-primary);
+        }
+
+        /* Step Cards */
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .step-badge {
+            background: var(--strava-orange);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Architecture Diagram */
+        .architecture-diagram {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .arch-layer {
+            text-align: center;
+        }
+
+        .arch-layer-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .arch-box {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 8px 0;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .arch-box:hover {
+            border-color: var(--strava-orange);
+            transform: translateY(-2px);
+        }
+
+        .arch-box.highlight {
+            border-color: var(--strava-orange);
+            background: rgba(252, 76, 2, 0.1);
+        }
+
+        .arch-connector {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        /* File Tree */
+        .file-tree {
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .file-tree-item {
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-tree-item.folder {
+            color: var(--strava-orange);
+        }
+
+        .file-tree-item.file {
+            color: var(--text-secondary);
+            padding-left: 24px;
+        }
+
+        .file-tree-item .icon {
+            width: 16px;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 40px;
+            text-align: center;
+            margin-top: 80px;
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav { padding: 0 20px; }
+            .hero { padding: 120px 20px 60px; }
+            .container { padding: 0 20px; }
+            .toc-grid { grid-template-columns: 1fr; }
+            .arch-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Checklist */
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <div class="nav-logo">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Deployment Guide
+            </div>
+            <div class="nav-links">
+                <a href="#overview" class="nav-link">Overview</a>
+                <a href="#prerequisites" class="nav-link">Prerequisites</a>
+                <a href="#dynamodb" class="nav-link">DynamoDB</a>
+                <a href="#lambda" class="nav-link">Lambda</a>
+                <a href="#api-gateway" class="nav-link">API Gateway</a>
+                <a href="#s3" class="nav-link">S3 & CloudFront</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-badge">
+            <span>Team 10</span> • Complete AWS Deployment Guide
+        </div>
+        <h1>
+            Strava Analytics<br>
+            <span class="highlight">Deployment Guide</span>
+        </h1>
+        <p class="hero-subtitle">
+            A step-by-step guide to deploy the complete ML-powered running analytics platform on AWS from scratch.
+        </p>
+    </section>
+
+    <div class="container">
+        <!-- Table of Contents -->
+        <div class="toc">
+            <h2>📋 Table of Contents</h2>
+            <div class="toc-grid">
+                <a href="#overview" class="toc-item">
+                    <span class="toc-number">1</span>
+                    <span class="toc-text">Architecture Overview</span>
+                </a>
+                <a href="#prerequisites" class="toc-item">
+                    <span class="toc-number">2</span>
+                    <span class="toc-text">Prerequisites & Files</span>
+                </a>
+                <a href="#dynamodb" class="toc-item">
+                    <span class="toc-number">3</span>
+                    <span class="toc-text">DynamoDB Tables (9 tables)</span>
+                </a>
+                <a href="#lambda-layer" class="toc-item">
+                    <span class="toc-number">4</span>
+                    <span class="toc-text">Lambda Layer (pandas/sklearn)</span>
+                </a>
+                <a href="#lambda" class="toc-item">
+                    <span class="toc-number">5</span>
+                    <span class="toc-text">Lambda Functions (10 functions)</span>
+                </a>
+                <a href="#api-gateway" class="toc-item">
+                    <span class="toc-number">6</span>
+                    <span class="toc-text">API Gateway Setup</span>
+                </a>
+                <a href="#s3" class="toc-item">
+                    <span class="toc-number">7</span>
+                    <span class="toc-text">S3 Bucket & Static Files</span>
+                </a>
+                <a href="#cloudfront" class="toc-item">
+                    <span class="toc-number">8</span>
+                    <span class="toc-text">CloudFront Distribution</span>
+                </a>
+                <a href="#strava" class="toc-item">
+                    <span class="toc-number">9</span>
+                    <span class="toc-text">Strava API Configuration</span>
+                </a>
+                <a href="#testing" class="toc-item">
+                    <span class="toc-number">10</span>
+                    <span class="toc-text">Testing & Verification</span>
+                </a>
+                <a href="#troubleshooting" class="toc-item">
+                    <span class="toc-number">11</span>
+                    <span class="toc-text">Troubleshooting</span>
+                </a>
+                <a href="#urls" class="toc-item">
+                    <span class="toc-number">12</span>
+                    <span class="toc-text">URL Configuration</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Section 1: Overview -->
+        <section id="overview" class="section">
+            <div class="section-header">
+                <div class="section-number">1</div>
+                <h2>Architecture Overview</h2>
+            </div>
+
+            <p>This project is a full-stack serverless application on AWS that provides ML-powered running analytics and pace predictions using data from Strava.</p>
+
+            <div class="architecture-diagram">
+                <h3 style="text-align: center; margin-bottom: 24px;">System Architecture</h3>
+                <div class="arch-grid">
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">Frontend</div>
+                        <div class="arch-box">CloudFront CDN</div>
+                        <div class="arch-connector">↓</div>
+                        <div class="arch-box">S3 Bucket (Static Files)</div>
+                        <div class="arch-connector">↓</div>
+                        <div class="arch-box">HTML/CSS/JS Pages</div>
+                    </div>
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">API Layer</div>
+                        <div class="arch-box highlight">API Gateway</div>
+                        <div class="arch-connector">↓</div>
+                        <div class="arch-box highlight">Lambda Functions (10)</div>
+                        <div class="arch-connector">↓</div>
+                        <div class="arch-box">Lambda Layer (pandas/sklearn)</div>
+                    </div>
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">Data Layer</div>
+                        <div class="arch-box">DynamoDB Tables (9)</div>
+                        <div class="arch-connector">↓</div>
+                        <div class="arch-box">Strava OAuth API</div>
+                        <div class="arch-connector">↓</div>
+                        <div class="arch-box">User Data / Activities</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Data Flow</h3>
+            <ol>
+                <li><strong>Authentication:</strong> User authenticates via Strava OAuth or uploads CSV</li>
+                <li><strong>Data Fetch:</strong> StravaDataFetcher retrieves activities from Strava API</li>
+                <li><strong>Processing:</strong> StravaDataProcessor/StravaCSVProcessor applies ML feature engineering</li>
+                <li><strong>Prediction:</strong> StravaPredictor uses Random Forest to predict pace</li>
+                <li><strong>Dashboard:</strong> Frontend displays stats, predictions, trends, and training plans</li>
+            </ol>
+        </section>
+
+        <!-- Section 2: Prerequisites -->
+        <section id="prerequisites" class="section">
+            <div class="section-header">
+                <div class="section-number">2</div>
+                <h2>Prerequisites & Files</h2>
+            </div>
+
+            <h3>Required AWS Account Setup</h3>
+            <ul class="checklist">
+                <li>
+                    <span class="check-icon">✓</span>
+                    <span>An active AWS account with billing enabled</span>
+                </li>
+                <li>
+                    <span class="check-icon">✓</span>
+                    <span>IAM user with <code>AdministratorAccess</code> or specific permissions for Lambda, DynamoDB, S3, CloudFront, API Gateway</span>
+                </li>
+                <li>
+                    <span class="check-icon">✓</span>
+                    <span>AWS CLI installed and configured (optional but helpful)</span>
+                </li>
+                <li>
+                    <span class="check-icon">✓</span>
+                    <span>Python 3.12 installed locally (for creating Lambda layer)</span>
+                </li>
+            </ul>
+
+            <h3>Project Files Required</h3>
+            <div class="file-tree">
+                <div class="file-tree-item folder">📁 lambda-functions/</div>
+                <div class="file-tree-item file">├── StravaAuthCallBackHandler.py</div>
+                <div class="file-tree-item file">├── StravaDataFetcher.py</div>
+                <div class="file-tree-item file">├── StravaDataProcessor.py</div>
+                <div class="file-tree-item file">├── StravaCSVProcessor.py</div>
+                <div class="file-tree-item file">├── StravaPredictor.py</div>
+                <div class="file-tree-item file">├── StravaStatsCalculator.py</div>
+                <div class="file-tree-item file">├── TrainingTrendsCalculator.py</div>
+                <div class="file-tree-item file">├── StravaLeaderboard.py</div>
+                <div class="file-tree-item file">├── StravaDashboardAPI.py</div>
+                <div class="file-tree-item file">└── weekly_training_plan.py</div>
+                <div class="file-tree-item folder">📁 frontend/</div>
+                <div class="file-tree-item file">├── index.html</div>
+                <div class="file-tree-item file">├── csv_upload.html</div>
+                <div class="file-tree-item file">├── input_page.html</div>
+                <div class="file-tree-item file">├── dashboard.html</div>
+                <div class="file-tree-item file">├── training_plan.html</div>
+                <div class="file-tree-item file">├── leaderboard.html</div>
+                <div class="file-tree-item file">└── documentation.html</div>
+            </div>
+
+            <div class="info-box warning">
+                <div class="info-icon">⚠️</div>
+                <div class="info-content">
+                    <h4>Region Consistency</h4>
+                    <p>This guide uses <code>eu-central-1</code> (Frankfurt). Use the same region for ALL services. If you choose a different region, update ALL code references.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: DynamoDB -->
+        <section id="dynamodb" class="section">
+            <div class="section-header">
+                <div class="section-number">3</div>
+                <h2>DynamoDB Tables</h2>
+            </div>
+
+            <p>Create 9 DynamoDB tables. Navigate to <strong>AWS Console → DynamoDB → Create table</strong> for each.</p>
+
+            <h3>OAuth User Tables (4 tables)</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Table Name</th>
+                            <th>Partition Key</th>
+                            <th>Sort Key</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>strava_tokens_pau</code></td>
+                            <td><code>athlete_id</code> (Number)</td>
+                            <td>—</td>
+                            <td>Store OAuth refresh tokens</td>
+                        </tr>
+                        <tr>
+                            <td><code>strava_activities_pau</code></td>
+                            <td><code>athlete_id</code> (Number)</td>
+                            <td><code>activity_id</code> (Number)</td>
+                            <td>Raw activities from Strava API</td>
+                        </tr>
+                        <tr>
+                            <td><code>strava_processed_pau</code></td>
+                            <td><code>athlete_id</code> (Number)</td>
+                            <td><code>activity_id</code> (Number)</td>
+                            <td>Processed activities with ML features</td>
+                        </tr>
+                        <tr>
+                            <td><code>strava_best_efforts_pau</code></td>
+                            <td><code>athlete_id</code> (Number)</td>
+                            <td><code>effort_key</code> (String)</td>
+                            <td>Best efforts per distance</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>CSV User Tables (3 tables)</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Table Name</th>
+                            <th>Partition Key</th>
+                            <th>Sort Key</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>strava_activities_csv</code></td>
+                            <td><code>athlete_id</code> (String)</td>
+                            <td><code>activity_id</code> (Number)</td>
+                            <td>CSV-uploaded raw activities</td>
+                        </tr>
+                        <tr>
+                            <td><code>strava_processed_csv</code></td>
+                            <td><code>athlete_id</code> (String)</td>
+                            <td><code>activity_id</code> (Number)</td>
+                            <td>Processed CSV activities</td>
+                        </tr>
+                        <tr>
+                            <td><code>strava_best_efforts_csv</code></td>
+                            <td><code>athlete_id</code> (String)</td>
+                            <td><code>effort_name</code> (String)</td>
+                            <td>Best efforts for CSV users</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Predictions Table (2 table)</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Table Name</th>
+                            <th>Partition Key</th>
+                            <th>Sort Key</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>strava_predictions_pau</code></td>
+                            <td><code>athlete_id</code> (Number)</td>
+                            <td><code>prediction_id</code> (String)</td>
+                            <td>Store prediction history</td>
+                        </tr>
+                                                <tr>
+                            <td><code>strava_predictions_csv</code></td>
+                            <td><code>athlete_id</code> (String)</td>
+                            <td><code>prediction_id</code> (String)</td>
+                            <td>Prediction history for CSV users</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Step-by-Step</span>
+                    <span class="step-title">Creating a DynamoDB Table</span>
+                </div>
+                <ol>
+                    <li>Go to <strong>AWS Console → DynamoDB → Tables → Create table</strong></li>
+                    <li>Enter the <strong>Table name</strong> exactly as shown above</li>
+                    <li>Set <strong>Partition key</strong> with correct name and type (Number or String)</li>
+                    <li>If there's a Sort key, click "Add sort key" and set it</li>
+                    <li>Leave <strong>Table settings</strong> as "Default settings" (On-demand billing)</li>
+                    <li>Click <strong>Create table</strong></li>
+                    <li>Repeat for all 8 tables</li>
+                </ol>
+            </div>
+
+            <div class="info-box tip">
+                <div class="info-icon">💡</div>
+                <div class="info-content">
+                    <h4>Pro Tip: On-Demand vs Provisioned</h4>
+                    <p>Use <strong>On-demand</strong> capacity mode to avoid unexpected bills. The free tier gives you 25 GB storage and 25 WCUs/RCUs provisioned.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Lambda Layer -->
+        <section id="lambda-layer" class="section">
+            <div class="section-header">
+                <div class="section-number">4</div>
+                <h2>Lambda Layer (pandas, numpy, scikit-learn)</h2>
+            </div>
+
+            <p>Lambda functions need pandas, numpy, and scikit-learn. Since these aren't included by default, we need to create a Lambda Layer.</p>
+
+            <div class="info-box danger">
+                <div class="info-icon">🚨</div>
+                <div class="info-content">
+                    <h4>Critical: Architecture Must Match</h4>
+                    <p>Lambda uses <code>linux/x86_64</code>. If you're on Mac M1/M2 (ARM), use Docker to build the layer. The packages MUST be compiled for Linux x86_64.</p>
+                </div>
+            </div>
+
+            <h3>Option A: Using Docker (Recommended)</h3>
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">🐳 Build layer with Docker</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre><span class="comment"># Create a working directory</span>
+mkdir lambda-layer && cd lambda-layer
+
+<span class="comment"># Create requirements.txt</span>
+cat > requirements.txt << 'EOF'
+pandas==2.0.3
+numpy==1.24.3
+scikit-learn==1.3.0
+EOF
+
+<span class="comment"># Build using Docker with Amazon Linux 2023</span>
+docker run --rm -v "$PWD":/var/task \
+  public.ecr.aws/sam/build-python3.12:latest \
+  pip install -r /var/task/requirements.txt -t /var/task/python/lib/python3.12/site-packages/ --platform manylinux2014_x86_64 --only-binary=:all:
+
+<span class="comment"># Create the zip file</span>
+zip -r pandas-sklearn-layer.zip python/
+
+<span class="comment"># The zip should be ~50-80 MB</span>
+ls -lh pandas-sklearn-layer.zip</pre>
+                </div>
+            </div>
+
+            <h3>Option B: Using EC2 (Alternative)</h3>
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">🖥️ Build layer on EC2</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre><span class="comment"># Launch an Amazon Linux 2023 t3.micro instance</span>
+<span class="comment"># Connect via SSH, then run:</span>
+
+sudo yum install python3.12 python3.12-pip zip -y
+
+mkdir python && cd python
+mkdir -p lib/python3.12/site-packages
+cd ..
+
+pip3.12 install pandas numpy scikit-learn -t python/lib/python3.12/site-packages/
+
+zip -r pandas-sklearn-layer.zip python/
+
+<span class="comment"># Download to your local machine using SCP or S3</span></pre>
+                </div>
+            </div>
+
+            <h3>Upload the Layer to AWS</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Upload</span>
+                    <span class="step-title">Creating the Lambda Layer</span>
+                </div>
+                <ol>
+                    <li>Go to <strong>AWS Console → Lambda → Layers → Create layer</strong></li>
+                    <li>Name: <code>pandas-sklearn-layer</code></li>
+                    <li>Upload the <code>pandas-sklearn-layer.zip</code> file</li>
+                    <li>Compatible architectures: <strong>x86_64</strong></li>
+                    <li>Compatible runtimes: <strong>Python 3.12</strong></li>
+                    <li>Click <strong>Create</strong></li>
+                    <li>Copy the <strong>Layer ARN</strong> — you'll need it for each Lambda function</li>
+                </ol>
+            </div>
+
+            <div class="info-box info">
+                <div class="info-icon">ℹ️</div>
+                <div class="info-content">
+                    <h4>Layer Size Limits</h4>
+                    <p>Lambda layers have a 250 MB unzipped limit. If your layer is too large, consider using Lambda container images instead.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Lambda Functions -->
+        <section id="lambda" class="section">
+            <div class="section-header">
+                <div class="section-number">5</div>
+                <h2>Lambda Functions</h2>
+            </div>
+
+            <p>Create 10 Lambda functions. Each function has specific configuration requirements.</p>
+
+            <h3>Lambda Functions Overview</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Function Name</th>
+                            <th>Runtime</th>
+                            <th>Memory</th>
+                            <th>Timeout</th>
+                            <th>Needs Layer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>StravaAuthCallBackHandler_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>128 MB</td>
+                            <td>30 sec</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><code>StravaDataFetcher_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>256 MB</td>
+                            <td>5 min</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><code>StravaDataProcessor_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>512 MB</td>
+                            <td>5 min</td>
+                            <td><strong>Yes</strong></td>
+                        </tr>
+                        <tr>
+                            <td><code>StravaCSVProcessor_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>512 MB</td>
+                            <td>5 min</td>
+                            <td><strong>Yes</strong></td>
+                        </tr>
+                        <tr>
+                            <td><code>StravaPredictor_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>512 MB</td>
+                            <td>2 min</td>
+                            <td><strong>Yes</strong></td>
+                        </tr>
+                        <tr>
+                            <td><code>StravaStatsCalculator_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>256 MB</td>
+                            <td>1 min</td>
+                            <td><strong>Yes</strong></td>
+                        </tr>
+                        <tr>
+                            <td><code>TrainingTrendsCalculator_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>256 MB</td>
+                            <td>1 min</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><code>StravaLeaderboard_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>256 MB</td>
+                            <td>30 sec</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><code>StravaDashboardAPI_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>256 MB</td>
+                            <td>30 sec</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><code>weekly_training_plan_pau</code></td>
+                            <td>Python 3.12</td>
+                            <td>256 MB</td>
+                            <td>1 min</td>
+                            <td>No</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Creating Each Lambda Function</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">For Each Function</span>
+                    <span class="step-title">Lambda Creation Steps</span>
+                </div>
+                <ol>
+                    <li>Go to <strong>AWS Console → Lambda → Create function</strong></li>
+                    <li>Select <strong>Author from scratch</strong></li>
+                    <li>Enter the <strong>Function name</strong> (e.g., <code>StravaDataProcessor_pau</code>)</li>
+                    <li>Runtime: <strong>Python 3.12</strong></li>
+                    <li>Architecture: <strong>x86_64</strong></li>
+                    <li>Click <strong>Create function</strong></li>
+                    <li>In the <strong>Code</strong> tab, paste the corresponding Python code</li>
+                    <li>If the function needs the layer: Go to <strong>Layers → Add a layer → Custom layers</strong> → Select <code>pandas-sklearn-layer</code></li>
+                    <li>Go to <strong>Configuration → General configuration → Edit</strong> and set Memory and Timeout as specified</li>
+                    <li>Add <strong>Environment Variables</strong> (see below)</li>
+                </ol>
+            </div>
+
+            <h3>Environment Variables for All Functions</h3>
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">📝 Common Environment Variables</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre><span class="comment"># Add these to Configuration → Environment variables</span>
+
+REGION_NAME = <span class="string">eu-central-1</span>
+
+<span class="comment"># OAuth tables</span>
+TOKENS_TABLE_NAME = <span class="string">strava_tokens_pau</span>
+ACTIVITIES_TABLE_NAME = <span class="string">strava_activities_pau</span>
+PROCESSED_TABLE_NAME = <span class="string">strava_processed_pau</span>
+BEST_EFFORTS_TABLE_NAME = <span class="string">strava_best_efforts_pau</span>
+PREDICTIONS_TABLE_NAME = <span class="string">strava_predictions_pau</span>
+
+<span class="comment"># CSV tables</span>
+ACTIVITIES_TABLE_CSV = <span class="string">strava_activities_csv</span>
+PROCESSED_TABLE_CSV = <span class="string">strava_processed_csv</span>
+BEST_EFFORTS_TABLE_CSV = <span class="string">strava_best_efforts_csv</span>
+PREDICTIONS_TABLE_CSV = <span class="string">strava_predictions_csv</span></pre>
+                </div>
+            </div>
+
+            <h3>Special Environment Variables</h3>
+            
+            <h4>For StravaAuthCallBackHandler_pau</h4>
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">🔑 Auth Handler Environment Variables</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre>STRAVA_CLIENT_ID = <span class="string">&lt;your_strava_client_id&gt;</span>
+STRAVA_CLIENT_SECRET = <span class="string">&lt;your_strava_client_secret&gt;</span>
+REDIRECT_URL = <span class="string">https://&lt;your-cloudfront-domain&gt;.cloudfront.net</span>
+DYNAMO_TABLE_NAME = <span class="string">strava_tokens_pau</span></pre>
+                </div>
+            </div>
+
+            <h4>For StravaDataFetcher_pau</h4>
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">🔄 Data Fetcher Environment Variables</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre>STRAVA_CLIENT_ID = <span class="string">&lt;your_strava_client_id&gt;</span>
+STRAVA_CLIENT_SECRET = <span class="string">&lt;your_strava_client_secret&gt;</span>
+TOKENS_TABLE_NAME = <span class="string">strava_tokens_pau</span>
+ACTIVITIES_TABLE_NAME = <span class="string">strava_activities_pau</span>
+BEST_EFFORTS_TABLE_NAME = <span class="string">strava_best_efforts_pau</span></pre>
+                </div>
+            </div>
+
+            <h3>IAM Role Permissions</h3>
+            <p>Each Lambda function needs an execution role. The simplest approach is to use a role with these policies:</p>
+            
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">📋 Required IAM Policies</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre><span class="comment"># Managed policies to attach:</span>
+AmazonDynamoDBFullAccess
+AWSLambdaBasicExecutionRole
+AWSLambda_FullAccess  <span class="comment"># Allows Lambda to invoke other Lambdas</span></pre>
+                </div>
+            </div>
+
+            <div class="info-box warning">
+                <div class="info-icon">⚠️</div>
+                <div class="info-content">
+                    <h4>Production Security Note</h4>
+                    <p>For production, create a custom IAM policy with minimal permissions (only access to specific tables and functions needed). Full access policies are only for development.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: API Gateway -->
+        <section id="api-gateway" class="section">
+            <div class="section-header">
+                <div class="section-number">6</div>
+                <h2>API Gateway Setup</h2>
+            </div>
+
+            <p>Create a REST API to expose Lambda functions to the frontend.</p>
+
+            <h3>Create the API</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Step 1</span>
+                    <span class="step-title">Create REST API</span>
+                </div>
+                <ol>
+                    <li>Go to <strong>AWS Console → API Gateway → Create API</strong></li>
+                    <li>Choose <strong>REST API</strong> (not REST API Private)</li>
+                    <li>Select <strong>New API</strong></li>
+                    <li>API name: <code>strava-analytics-api</code></li>
+                    <li>Endpoint Type: <strong>Regional</strong></li>
+                    <li>Click <strong>Create API</strong></li>
+                </ol>
+            </div>
+
+            <h3>API Endpoints to Create</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource Path</th>
+                            <th>Method</th>
+                            <th>Lambda Function</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/strava_callback</code></td>
+                            <td>GET</td>
+                            <td>StravaAuthCallBackHandler_pau</td>
+                            <td>OAuth callback from Strava</td>
+                        </tr>
+                        <tr>
+                            <td><code>/csv-upload</code></td>
+                            <td>POST</td>
+                            <td>StravaCSVProcessor_pau</td>
+                            <td>Upload CSV activities</td>
+                        </tr>
+                        <tr>
+                            <td><code>/predict</code></td>
+                            <td>POST, OPTIONS</td>
+                            <td>StravaPredictor_pau</td>
+                            <td>Get pace predictions</td>
+                        </tr>
+                        <tr>
+                            <td><code>/stats</code></td>
+                            <td>GET, POST, OPTIONS</td>
+                            <td>StravaStatsCalculator_pau</td>
+                            <td>Get user statistics</td>
+                        </tr>
+                        <tr>
+                            <td><code>/trends</code></td>
+                            <td>GET, OPTIONS</td>
+                            <td>TrainingTrendsCalculator_pau</td>
+                            <td>Get training trends</td>
+                        </tr>
+                        <tr>
+                            <td><code>/leaderboard</code></td>
+                            <td>GET, OPTIONS</td>
+                            <td>StravaLeaderboard_pau</td>
+                            <td>Get leaderboard data</td>
+                        </tr>
+                        <tr>
+                            <td><code>/dashboard</code></td>
+                            <td>GET, OPTIONS</td>
+                            <td>StravaDashboardAPI_pau</td>
+                            <td>Dashboard data</td>
+                        </tr>
+                        <tr>
+                            <td><code>/plan</code></td>
+                            <td>GET, OPTIONS</td>
+                            <td>weekly_training_plan_pau</td>
+                            <td>Training plan generation</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Creating Each Endpoint</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">For Each Endpoint</span>
+                    <span class="step-title">Resource & Method Creation</span>
+                </div>
+                <ol>
+                    <li>In your API, click <strong>Actions → Create Resource</strong></li>
+                    <li>Resource Name: e.g., <code>predict</code></li>
+                    <li>Check ✅ <strong>Enable API Gateway CORS</strong></li>
+                    <li>Click <strong>Create Resource</strong></li>
+                    <li>With the resource selected, click <strong>Actions → Create Method</strong></li>
+                    <li>Select the HTTP method (GET/POST)</li>
+                    <li>Integration type: <strong>Lambda Function</strong></li>
+                    <li>Check ✅ <strong>Use Lambda Proxy integration</strong></li>
+                    <li>Lambda Function: Enter the function name</li>
+                    <li>Click <strong>Save</strong> and confirm permission prompt</li>
+                </ol>
+            </div>
+
+            <h3>Enable CORS for Each Resource</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">CORS</span>
+                    <span class="step-title">Enable Cross-Origin Requests</span>
+                </div>
+                <ol>
+                    <li>Select the resource (e.g., <code>/predict</code>)</li>
+                    <li>Click <strong>Actions → Enable CORS</strong></li>
+                    <li>Set <strong>Access-Control-Allow-Origin</strong> to <code>'*'</code></li>
+                    <li>Click <strong>Enable CORS and replace existing CORS headers</strong></li>
+                    <li>Confirm the changes</li>
+                </ol>
+            </div>
+
+            <h3>Deploy the API</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Deploy</span>
+                    <span class="step-title">Make API Live</span>
+                </div>
+                <ol>
+                    <li>Click <strong>Actions → Deploy API</strong></li>
+                    <li>Deployment stage: <strong>[New Stage]</strong></li>
+                    <li>Stage name: <code>prod</code></li>
+                    <li>Click <strong>Deploy</strong></li>
+                    <li>Copy the <strong>Invoke URL</strong> — you'll need this for the frontend!</li>
+                </ol>
+            </div>
+
+            <div class="info-box tip">
+                <div class="info-icon">📋</div>
+                <div class="info-content">
+                    <h4>Your API Base URL</h4>
+                    <p>It will look like: <code>https://xxxxxxxxxx.execute-api.eu-central-1.amazonaws.com/prod</code></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7: S3 -->
+        <section id="s3" class="section">
+            <div class="section-header">
+                <div class="section-number">7</div>
+                <h2>S3 Bucket for Static Files</h2>
+            </div>
+
+            <h3>Create the S3 Bucket</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Step 1</span>
+                    <span class="step-title">Create Bucket</span>
+                </div>
+                <ol>
+                    <li>Go to <strong>AWS Console → S3 → Create bucket</strong></li>
+                    <li>Bucket name: <code>strava-analytics-dashboard-pau</code> (must be globally unique)</li>
+                    <li>Region: <code>eu-central-1</code></li>
+                    <li>Uncheck ❌ <strong>Block all public access</strong> (we need public access for static hosting)</li>
+                    <li>Acknowledge the warning by checking the box</li>
+                    <li>Click <strong>Create bucket</strong></li>
+                </ol>
+            </div>
+
+            <h3>Enable Static Website Hosting</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Step 2</span>
+                    <span class="step-title">Enable Static Hosting</span>
+                </div>
+                <ol>
+                    <li>Click on your bucket → <strong>Properties</strong> tab</li>
+                    <li>Scroll to <strong>Static website hosting</strong> → Edit</li>
+                    <li>Enable: <strong>Yes</strong></li>
+                    <li>Index document: <code>index.html</code></li>
+                    <li>Error document: <code>index.html</code></li>
+                    <li>Click <strong>Save changes</strong></li>
+                </ol>
+            </div>
+
+            <h3>Add Bucket Policy</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Step 3</span>
+                    <span class="step-title">Make Objects Public</span>
+                </div>
+                <ol>
+                    <li>Go to <strong>Permissions</strong> tab</li>
+                    <li>Click <strong>Bucket policy → Edit</strong></li>
+                    <li>Paste the policy below (replace YOUR_BUCKET_NAME)</li>
+                </ol>
+            </div>
+
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">📝 Bucket Policy</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre>{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::<span class="variable">YOUR_BUCKET_NAME</span>/*"
+        }
+    ]
+}</pre>
+                </div>
+            </div>
+
+            <h3>Upload Frontend Files</h3>
+            <p>Before uploading, you must update the API URLs in the HTML files!</p>
+
+            <div class="info-box danger">
+                <div class="info-icon">🚨</div>
+                <div class="info-content">
+                    <h4>Critical: Update URLs in HTML Files</h4>
+                    <p>Each HTML file contains hardcoded URLs that must be updated to your new API Gateway and S3/CloudFront URLs. See Section 12 for details.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Step 4</span>
+                    <span class="step-title">Upload Files</span>
+                </div>
+                <ol>
+                    <li>Go to your bucket → <strong>Objects</strong> tab</li>
+                    <li>Click <strong>Upload</strong></li>
+                    <li>Drag and drop all HTML files</li>
+                    <li>Click <strong>Upload</strong></li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Section 8: CloudFront -->
+        <section id="cloudfront" class="section">
+            <div class="section-header">
+                <div class="section-number">8</div>
+                <h2>CloudFront Distribution</h2>
+            </div>
+
+            <p>CloudFront provides HTTPS and global CDN caching for your frontend.</p>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Create</span>
+                    <span class="step-title">CloudFront Distribution</span>
+                </div>
+                <ol>
+                    <li>Go to <strong>AWS Console → CloudFront → Create distribution</strong></li>
+                    <li><strong>Origin domain</strong>: Select your S3 bucket (NOT the S3 website endpoint)</li>
+                    <li><strong>Origin access</strong>: Select <strong>Legacy access identities</strong> → Create new OAI → Yes, update bucket policy</li>
+                    <li><strong>Viewer protocol policy</strong>: Redirect HTTP to HTTPS</li>
+                    <li><strong>Allowed HTTP methods</strong>: GET, HEAD</li>
+                    <li><strong>Cache policy</strong>: CachingOptimized</li>
+                    <li><strong>Default root object</strong>: <code>index.html</code></li>
+                    <li>Click <strong>Create distribution</strong></li>
+                    <li>Wait for status to become <strong>Deployed</strong> (5-15 minutes)</li>
+                    <li>Copy the <strong>Distribution domain name</strong> (e.g., <code>d1234abcd.cloudfront.net</code>)</li>
+                </ol>
+            </div>
+
+            <div class="info-box tip">
+                <div class="info-icon">💡</div>
+                <div class="info-content">
+                    <h4>Custom Domain (Optional)</h4>
+                    <p>You can add a custom domain in CloudFront settings later. You'll need an SSL certificate from AWS Certificate Manager (ACM) in the <code>us-east-1</code> region.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 9: Strava -->
+        <section id="strava" class="section">
+            <div class="section-header">
+                <div class="section-number">9</div>
+                <h2>Strava API Configuration</h2>
+            </div>
+
+            <h3>Create Strava API Application</h3>
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Strava</span>
+                    <span class="step-title">Create API Application</span>
+                </div>
+                <ol>
+                    <li>Go to <a href="https://www.strava.com/settings/api" target="_blank" style="color: var(--strava-orange);">https://www.strava.com/settings/api</a></li>
+                    <li>Fill in the application details:
+                        <ul>
+                            <li><strong>Application Name</strong>: Your app name</li>
+                            <li><strong>Category</strong>: Training Analysis</li>
+                            <li><strong>Website</strong>: Your CloudFront URL</li>
+                            <li><strong>Authorization Callback Domain</strong>: Your API Gateway domain (e.g., <code>xxxxxxxxxx.execute-api.eu-central-1.amazonaws.com</code>)</li>
+                        </ul>
+                    </li>
+                    <li>Copy <strong>Client ID</strong> and <strong>Client Secret</strong></li>
+                    <li>Update these values in your Lambda environment variables</li>
+                </ol>
+            </div>
+
+            <div class="info-box warning">
+                <div class="info-icon">⚠️</div>
+                <div class="info-content">
+                    <h4>Callback Domain Format</h4>
+                    <p>The Authorization Callback Domain must be just the domain without protocol or path. For example: <code>xxxxxxxxxx.execute-api.eu-central-1.amazonaws.com</code></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 10: Testing -->
+        <section id="testing" class="section">
+            <div class="section-header">
+                <div class="section-number">10</div>
+                <h2>Testing & Verification</h2>
+            </div>
+
+            <h3>Test Each Component</h3>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Test 1</span>
+                    <span class="step-title">Test S3 Static Hosting</span>
+                </div>
+                <p>Navigate to <code>https://your-bucket.s3.eu-central-1.amazonaws.com/index.html</code></p>
+                <p>You should see the login page.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Test 2</span>
+                    <span class="step-title">Test CloudFront</span>
+                </div>
+                <p>Navigate to <code>https://dxxxxxxxxx.cloudfront.net</code></p>
+                <p>You should see the same login page over HTTPS.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Test 3</span>
+                    <span class="step-title">Test API Gateway</span>
+                </div>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">🧪 Test Leaderboard Endpoint</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+<pre>curl https://&lt;your-api-id&gt;.execute-api.eu-central-1.amazonaws.com/prod/leaderboard</pre>
+                    </div>
+                </div>
+                <p>You should get a JSON response (even if empty).</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Test 4</span>
+                    <span class="step-title">Test OAuth Flow</span>
+                </div>
+                <ol>
+                    <li>Visit your CloudFront URL</li>
+                    <li>Click "Login with Strava"</li>
+                    <li>Authorize the app</li>
+                    <li>You should be redirected to the input page</li>
+                </ol>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Test 5</span>
+                    <span class="step-title">Test CSV Upload</span>
+                </div>
+                <ol>
+                    <li>Visit your CloudFront URL</li>
+                    <li>Click "Upload CSV"</li>
+                    <li>Upload a test activities.csv file from Strava</li>
+                    <li>You should see the dashboard with your data</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Section 11: Troubleshooting -->
+        <section id="troubleshooting" class="section">
+            <div class="section-header">
+                <div class="section-number">11</div>
+                <h2>Troubleshooting</h2>
+            </div>
+
+            <h3>Common Issues</h3>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Issue</span>
+                    <span class="step-title">CORS Errors in Browser Console</span>
+                </div>
+                <p><strong>Solution:</strong></p>
+                <ul>
+                    <li>Enable CORS on each API Gateway resource</li>
+                    <li>Ensure your Lambda returns CORS headers in the response</li>
+                    <li>Redeploy the API after making changes</li>
+                </ul>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Issue</span>
+                    <span class="step-title">Lambda Timeout Errors</span>
+                </div>
+                <p><strong>Solution:</strong></p>
+                <ul>
+                    <li>Increase the timeout in Lambda Configuration → General configuration</li>
+                    <li>For data processing functions, use 5 minutes (300 seconds)</li>
+                    <li>Increase memory if needed (more memory = faster execution)</li>
+                </ul>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Issue</span>
+                    <span class="step-title">"Module not found" in Lambda</span>
+                </div>
+                <p><strong>Solution:</strong></p>
+                <ul>
+                    <li>Ensure the Lambda Layer is attached to the function</li>
+                    <li>Verify the layer was built for the correct Python version (3.12)</li>
+                    <li>Check the layer was built for x86_64 architecture</li>
+                </ul>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Issue</span>
+                    <span class="step-title">OAuth "Invalid callback domain"</span>
+                </div>
+                <p><strong>Solution:</strong></p>
+                <ul>
+                    <li>Update the Authorization Callback Domain in Strava API settings</li>
+                    <li>It must match your API Gateway domain exactly</li>
+                    <li>Do not include <code>https://</code> or paths in the domain</li>
+                </ul>
+            </div>
+
+            <div class="step-card">
+                <div class="step-header">
+                    <span class="step-badge">Issue</span>
+                    <span class="step-title">DynamoDB Access Denied</span>
+                </div>
+                <p><strong>Solution:</strong></p>
+                <ul>
+                    <li>Check the Lambda execution role has DynamoDB permissions</li>
+                    <li>Verify table names match exactly (case-sensitive)</li>
+                    <li>Ensure the region is correct</li>
+                </ul>
+            </div>
+
+            <h3>Debugging Tips</h3>
+            <ul>
+                <li>Check <strong>CloudWatch Logs</strong> for Lambda execution logs</li>
+                <li>Use the browser's <strong>Developer Tools → Network</strong> tab to see API calls</li>
+                <li>Test Lambda functions directly from the AWS Console using test events</li>
+                <li>Use <code>curl</code> to test API endpoints from the command line</li>
+            </ul>
+        </section>
+
+        <!-- Section 12: URL Configuration -->
+        <section id="urls" class="section">
+            <div class="section-header">
+                <div class="section-number">12</div>
+                <h2>URL Configuration</h2>
+            </div>
+
+            <p>After deployment, you must update hardcoded URLs in the HTML files.</p>
+
+            <h3>URLs to Update</h3>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Variable/String</th>
+                            <th>Replace With</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>All HTML files</td>
+                            <td><code>API_URL</code></td>
+                            <td>Your API Gateway URL (e.g., <code>https://xxx.execute-api.eu-central-1.amazonaws.com/prod</code>)</td>
+                        </tr>
+                        <tr>
+                            <td>index.html</td>
+                            <td><code>REDIRECT_URI</code></td>
+                            <td>Your API Gateway callback URL</td>
+                        </tr>
+                        <tr>
+                            <td>csv_upload.html</td>
+                            <td>S3 bucket URL for redirect</td>
+                            <td>Your S3/CloudFront URL</td>
+                        </tr>
+                        <tr>
+                            <td>input_page.html</td>
+                            <td>Dashboard redirect URL</td>
+                            <td>Your S3/CloudFront URL</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Search & Replace Guide</h3>
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">🔄 URLs to Find and Replace</span>
+                    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                </div>
+                <div class="code-content">
+<pre><span class="comment"># Find and replace these strings in ALL HTML files:</span>
+
+<span class="comment"># Old API Gateway URL → Your new API Gateway URL</span>
+https://u686ugpbm5.execute-api.eu-central-1.amazonaws.com/prod
+→ https://YOUR_API_ID.execute-api.eu-central-1.amazonaws.com/prod
+
+<span class="comment"># Old S3 bucket URL → Your new S3/CloudFront URL</span>
+https://strava-analytics-dashboard-pau.s3.eu-central-1.amazonaws.com
+→ https://YOUR_BUCKET.s3.eu-central-1.amazonaws.com
+
+<span class="comment"># Old CloudFront URL → Your new CloudFront URL</span>
+https://dd9ssrwk58hno.cloudfront.net
+→ https://YOUR_DISTRIBUTION.cloudfront.net
+
+<span class="comment"># Old callback URL → Your new callback URL</span>
+https://v9j112adnk.execute-api.eu-central-1.amazonaws.com/strava_callback
+→ https://YOUR_API_ID.execute-api.eu-central-1.amazonaws.com/prod/strava_callback</pre>
+                </div>
+            </div>
+
+            <div class="info-box tip">
+                <div class="info-icon">💡</div>
+                <div class="info-content">
+                    <h4>Pro Tip: Use Find & Replace</h4>
+                    <p>Use a code editor like VS Code to find and replace across all files at once. This ensures you don't miss any URLs.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final Checklist -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">✓</div>
+                <h2>Deployment Checklist</h2>
+            </div>
+
+            <p>Before considering the deployment complete, verify each item:</p>
+
+            <ul class="checklist">
+                <li>
+                    <span class="check-icon">1</span>
+                    <span>All 9 DynamoDB tables created with correct keys</span>
+                </li>
+                <li>
+                    <span class="check-icon">2</span>
+                    <span>Lambda Layer created and uploaded with pandas/sklearn</span>
+                </li>
+                <li>
+                    <span class="check-icon">3</span>
+                    <span>All 10 Lambda functions created with correct code</span>
+                </li>
+                <li>
+                    <span class="check-icon">4</span>
+                    <span>Lambda Layer attached to functions that need it</span>
+                </li>
+                <li>
+                    <span class="check-icon">5</span>
+                    <span>Environment variables set on all Lambda functions</span>
+                </li>
+                <li>
+                    <span class="check-icon">6</span>
+                    <span>IAM roles have DynamoDB and Lambda invoke permissions</span>
+                </li>
+                <li>
+                    <span class="check-icon">7</span>
+                    <span>API Gateway created with all endpoints</span>
+                </li>
+                <li>
+                    <span class="check-icon">8</span>
+                    <span>CORS enabled on all API Gateway resources</span>
+                </li>
+                <li>
+                    <span class="check-icon">9</span>
+                    <span>API Gateway deployed to 'prod' stage</span>
+                </li>
+                <li>
+                    <span class="check-icon">10</span>
+                    <span>S3 bucket created with static hosting enabled</span>
+                </li>
+                <li>
+                    <span class="check-icon">11</span>
+                    <span>S3 bucket policy allows public read access</span>
+                </li>
+                <li>
+                    <span class="check-icon">12</span>
+                    <span>CloudFront distribution created and deployed</span>
+                </li>
+                <li>
+                    <span class="check-icon">13</span>
+                    <span>Strava API application created with correct callback domain</span>
+                </li>
+                <li>
+                    <span class="check-icon">14</span>
+                    <span>All HTML files updated with new URLs</span>
+                </li>
+                <li>
+                    <span class="check-icon">15</span>
+                    <span>HTML files uploaded to S3 bucket</span>
+                </li>
+                <li>
+                    <span class="check-icon">16</span>
+                    <span>OAuth login flow tested successfully</span>
+                </li>
+                <li>
+                    <span class="check-icon">17</span>
+                    <span>CSV upload flow tested successfully</span>
+                </li>
+            </ul>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Strava Analytics Dashboard Deployment Guide • Team 10</p>
+        <p style="margin-top: 8px; font-size: 12px;">Built with AWS Lambda, DynamoDB, API Gateway, S3, and CloudFront</p>
+    </footer>
+
+    <script>
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block');
+            const code = codeBlock.querySelector('pre').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = 'var(--success)';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            });
+        }
+
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Highlight current section in nav
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 150) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.style.color = '';
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.style.color = 'var(--strava-orange)';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
