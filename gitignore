@@ -1,0 +1,367 @@
+# ============================================
+# Strava Analytics Dashboard - .gitignore
+# ============================================
+
+# ============================================
+# Python
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.virtualenv/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ============================================
+# AWS & Lambda
+# ============================================
+
+# Lambda deployment packages
+*.zip
+lambda-layer/
+lambda-package/
+package/
+
+# AWS credentials (NEVER commit these!)
+.aws/
+aws-credentials
+credentials
+config
+
+# SAM CLI
+.aws-sam/
+samconfig.toml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# CDK
+cdk.out/
+
+# ============================================
+# Environment & Secrets
+# ============================================
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+*.env
+
+# Secret files
+secrets.json
+secrets.yaml
+secrets.yml
+*.secret
+*.secrets
+*-secret.json
+
+# API keys and credentials
+api_keys.txt
+credentials.json
+service-account.json
+
+# Strava credentials (IMPORTANT!)
+strava_credentials.json
+strava_tokens.json
+client_secret.json
+
+# ============================================
+# IDE & Editors
+# ============================================
+
+# VS Code
+.vscode/
+*.code-workspace
+.history/
+
+# PyCharm / JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============================================
+# Operating System
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Logs & Databases
+# ============================================
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# Testing & Coverage
+# ============================================
+
+# Test output
+test-results/
+test-output/
+*.test.js.snap
+
+# Coverage
+coverage/
+.nyc_output/
+
+# ============================================
+# Build & Dependencies
+# ============================================
+
+# Node.js (if any JS tooling is used)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Bower
+bower_components/
+
+# ============================================
+# Data Files (Don't commit user data!)
+# ============================================
+
+# CSV data files
+*.csv
+!example_activities.csv
+
+# JSON data exports
+data/
+exports/
+*.data.json
+
+# Strava exports
+activities.csv
+activities_*.csv
+
+# ============================================
+# Temporary Files
+# ============================================
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Cache
+.cache/
+*.cache
+
+# ============================================
+# Documentation Build
+# ============================================
+
+# Sphinx documentation
+docs/_build/
+
+# Generated docs
+site/
+public/
+
+# ============================================
+# Project Specific
+# ============================================
+
+# Lambda layer build artifacts
+python/
+pandas-sklearn-layer.zip
+lambda-layer.zip
+
+# Local test data
+test_data/
+sample_data/
+
+# Deployment artifacts
+.deploy/
+deploy_output/
+
+# ============================================
+# Optional: Keep these files
+# ============================================
+
+# Keep example files
+!example.env
+!.env.example
+!example_config.json
