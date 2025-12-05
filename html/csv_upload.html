@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Your Strava Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #242424;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #FC4C02 0%, #FF8800 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #999;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #FC4C02;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #FC4C02;
+        }
+
+        .file-upload-area {
+            border: 3px dashed #3a3a3a;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #2a2a2a;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: #FC4C02;
+            background: #2f2f2f;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #FC4C02;
+            background: #2f2f2f;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-name {
+            color: #FC4C02;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .slider-container {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #3a3a3a;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #FC4C02;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(252, 76, 2, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #FF5722;
+            transform: scale(1.2);
+        }
+
+        .slider-value {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #FC4C02;
+            margin-top: 10px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: 2px solid #3a3a3a;
+            background: #2a2a2a;
+            color: #ffffff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn:hover {
+            border-color: #FC4C02;
+            background: #2f2f2f;
+            transform: translateY(-2px);
+        }
+
+        .btn.active {
+            background: #FC4C02;
+            border-color: #FC4C02;
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(252, 76, 2, 0.4);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #FC4C02 0%, #FF5722 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(252, 76, 2, 0.3);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(252, 76, 2, 0.5);
+        }
+
+        .submit-btn:disabled {
+            background: #3a3a3a;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .error-message {
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 4px solid #3a3a3a;
+            border-top: 4px solid #FC4C02;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .terrain-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .info-box {
+            background: #2a2a2a;
+            border-left: 4px solid #FC4C02;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .info-box h3 {
+            color: #FC4C02;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-box ol {
+            margin-left: 20px;
+            color: #b3b3b3;
+            font-size: 14px;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .button-group {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .terrain-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏃‍♂️ Upload Your Strava Data</h1>
+            <p>Get AI-powered predictions from your CSV export</p>
+        </div>
+
+        <!-- How to get CSV -->
+        <div class="info-box">
+            <h3>📁 How to get your CSV file:</h3>
+            <ol>
+                <li>Go to <strong>Strava.com</strong> → Settings → My Account</li>
+                <li>Scroll to <strong>"Download or Delete Your Account"</strong></li>
+                <li>Click <strong>"Get Started"</strong></li>
+                <li>Request your data export (available once per week)</li>
+                <li>Download the <strong>activities.csv</strong> file</li>
+            </ol>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="uploadForm">
+            <!-- Name Input -->
+            <div class="form-group">
+                <label for="athleteName">Your Name *</label>
+                <input 
+                    type="text" 
+                    id="athleteName" 
+                    name="athleteName" 
+                    placeholder="e.g., Maria, John, Sarah..."
+                    required
+                >
+                <div class="help-text">This will identify your data (only letters, no spaces)</div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="form-group">
+                <label>Upload activities.csv *</label>
+                <div class="file-upload-area" id="fileUploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p><strong>Drop your activities.csv here</strong></p>
+                    <p style="color: #888; font-size: 14px;">or click to browse</p>
+                    <input type="file" id="fileInput" accept=".csv">
+                    <div class="file-name" id="fileName"></div>
+                </div>
+                <div class="help-text">Only activities.csv from Strava (max 5MB)</div>
+            </div>
+
+            <!-- Distance Slider -->
+            <div class="form-group">
+                <label for="distance">Distance (km)</label>
+                <div class="slider-container">
+                    <input type="range" id="distance" name="distance" min="1" max="100" value="10" step="0.5">
+                    <div class="slider-value" id="distanceValue">10 km</div>
+                </div>
+                <div class="help-text">Your planned run distance</div>
+            </div>
+
+            <!-- Max Heart Rate Slider -->
+            <div class="form-group">
+                <label for="maxHR">Maximum Heart Rate (bpm)</label>
+                <div class="slider-container">
+                    <input type="range" id="maxHR" name="maxHR" min="180" max="210" value="195" step="1">
+                    <div class="slider-value" id="maxHRValue">195 bpm</div>
+                </div>
+                <div class="help-text">Usually 220 - your age</div>
+            </div>
+
+            <!-- Effort Level -->
+            <div class="form-group">
+                <label>Effort Level</label>
+                <div class="button-group">
+                    <button type="button" class="btn effort-btn" data-effort="easy">Easy</button>
+                    <button type="button" class="btn effort-btn active" data-effort="moderate">Moderate</button>
+                    <button type="button" class="btn effort-btn" data-effort="tempo">Tempo</button>
+                    <button type="button" class="btn effort-btn" data-effort="hard">Hard</button>
+                    <button type="button" class="btn effort-btn" data-effort="race">Race</button>
+                </div>
+            </div>
+
+            <!-- Terrain -->
+            <div class="form-group">
+                <label>Terrain Type</label>
+                <div class="terrain-grid">
+                    <button type="button" class="btn terrain-btn active" data-terrain="flat">
+                        Flat<br><span style="font-size:11px;">&lt;20m</span>
+                    </button>
+                    <button type="button" class="btn terrain-btn" data-terrain="rolling">
+                        Rolling<br><span style="font-size:11px;">20-100m</span>
+                    </button>
+                    <button type="button" class="btn terrain-btn" data-terrain="hilly">
+                        Hilly<br><span style="font-size:11px;">&gt;100m</span>
+                    </button>
+                </div>
+                <div class="help-text">Elevation gain per 10km</div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Process My Data & Get Predictions →
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Processing your data...</p>
+            <p style="font-size: 14px; color: #888; margin-top: 10px;">This may take 20-30 seconds</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://u686ugpbm5.execute-api.eu-central-1.amazonaws.com/prod';
+        
+        // File upload handling
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        let uploadedFile = null;
+
+        fileUploadArea.addEventListener('click', () => fileInput.click());
+
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (file.name !== 'activities.csv') {
+                showError('Please upload a file named "activities.csv" from Strava');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showError('File too large (max 5MB)');
+                return;
+            }
+
+            uploadedFile = file;
+            fileName.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        }
+
+        // Sliders
+        const distanceSlider = document.getElementById('distance');
+        const distanceValue = document.getElementById('distanceValue');
+        distanceSlider.addEventListener('input', (e) => {
+            distanceValue.textContent = `${e.target.value} km`;
+        });
+
+        const maxHRSlider = document.getElementById('maxHR');
+        const maxHRValue = document.getElementById('maxHRValue');
+        maxHRSlider.addEventListener('input', (e) => {
+            maxHRValue.textContent = `${e.target.value} bpm`;
+        });
+
+        // Effort buttons
+        const effortButtons = document.querySelectorAll('.effort-btn');
+        let selectedEffort = 'moderate';
+        effortButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                effortButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedEffort = btn.dataset.effort;
+            });
+        });
+
+        // Terrain buttons
+        const terrainButtons = document.querySelectorAll('.terrain-btn');
+        let selectedTerrain = 'flat';
+        terrainButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                terrainButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedTerrain = btn.dataset.terrain;
+            });
+        });
+
+        // Form submission
+        const form = document.getElementById('uploadForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const loading = document.getElementById('loading');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const athleteName = document.getElementById('athleteName').value.trim().toLowerCase();
+            
+            // Validate name (only letters)
+            if (!/^[a-z]+$/.test(athleteName)) {
+                showError('Name must contain only letters (no spaces or special characters)');
+                return;
+            }
+
+            if (!uploadedFile) {
+                showError('Please upload activities.csv file');
+                return;
+            }
+
+            // Show loading
+            form.style.display = 'none';
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            try {
+                // Read file as text
+                const csvText = await uploadedFile.text();
+                
+                // Base64 encode
+                const csvBase64 = btoa(unescape(encodeURIComponent(csvText)));
+
+                // Prepare payload
+                const payload = {
+                    athlete_name: athleteName,
+                    csv_data: csvBase64,
+                    prediction_params: {
+                        distance_km: parseFloat(distanceSlider.value),
+                        effort: selectedEffort,
+                        terrain: selectedTerrain,
+                        max_hr: parseInt(maxHRSlider.value)
+                    }
+                };
+
+                // Upload CSV
+                const response = await fetch(`${API_URL}/csv-upload`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                const athleteId = result.athlete_id;
+                
+                // Store for dashboard
+                localStorage.setItem('athlete_id', athleteId);
+                localStorage.setItem('predictionParams', JSON.stringify(payload.prediction_params));
+
+                // Wait a bit for processing
+                await new Promise(resolve => setTimeout(resolve, 3000));
+
+                // Get prediction
+                const predResponse = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        athlete_id: athleteId,
+                        ...payload.prediction_params
+                    })
+                });
+
+                const predResult = await predResponse.json();
+                
+                // Add timestamp to track freshness
+                predResult.timestamp = Date.now();
+                predResult.athlete_id = athleteId;
+                
+                // Store for backwards compatibility (same domain)
+                localStorage.setItem('predictionResults', JSON.stringify(predResult));
+                localStorage.setItem('predictionParams', JSON.stringify(payload.prediction_params));
+                
+                console.log('✅ Prediction received:', predResult);
+                console.log('💾 Saved to localStorage');
+                
+                // ✅ CRITICAL: Encode prediction data for URL (works across domains!)
+                const urlPayload = {
+                    results: predResult,
+                    params: {
+                        athlete_id: athleteId,
+                        ...payload.prediction_params
+                    }
+                };
+                
+                const encodedData = btoa(encodeURIComponent(JSON.stringify(urlPayload)));
+                console.log('📦 Encoded prediction data for URL transfer');
+                
+                // Add cache buster
+                const cacheBuster = Date.now();
+                
+                console.log('🔄 Redirecting to dashboard with prediction data...');
+                
+                // Redirect to dashboard WITH DATA IN URL
+                window.location.href = `https://strava-analytics-dashboard-pau.s3.eu-central-1.amazonaws.com/dashboard.html?athlete_id=${athleteId}&_=${cacheBuster}&data=${encodedData}`;
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Failed: ${error.message}`);
+                form.style.display = 'block';
+                loading.style.display = 'none';
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strava Data Dashboard Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div id="app" class="bg-white p-8 sm:p-12 rounded-xl shadow-2xl w-full max-w-md text-center">
+        <!-- Header -->
+        <div class="mb-8">
+            <svg class="w-16 h-16 mx-auto text-orange-600" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 10C27.91 10 10 27.91 10 50C10 72.09 27.91 90 50 90C72.09 90 90 72.09 90 50C90 27.91 72.09 10 50 10ZM50 20C66.568 20 80 33.432 80 50C80 66.568 66.568 80 50 80C33.432 80 20 66.568 20 50C20 33.432 33.432 20 50 20Z" fill="#FC4C02"/>
+                <path d="M48 30C49.1 30 50 30.9 50 32V46H60C61.1 46 62 46.9 62 48V60C62 61.1 61.1 62 60 62H48V78C48 79.1 47.1 80 46 80C44.9 80 44 79.1 44 78V50C44 48.9 44.9 48 46 48H56V34H46C44.9 34 44 33.1 44 32C44 30.9 44.9 30 46 30H48Z" fill="white"/>
+            </svg>
+            <h1 class="text-3xl font-extrabold text-gray-900 mt-4">Coolest Strava API</h1>
+            <p class="text-gray-500 mt-1">Connect your Strava data for ML-driven insights developed by Team 10.</p>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="auth-section">
+            <p class="text-sm text-gray-600 mb-6">
+                Choose how to connect your running data:
+            </p>
+            
+            <!-- Strava OAuth Button (Primary - Orange) -->
+            <button id="strava-login-button" 
+                    class="w-full inline-flex items-center justify-center px-6 py-3 mb-4 border border-transparent text-base font-medium rounded-full shadow-md text-white bg-[#FC4C02] hover:bg-orange-700 transition duration-150 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FC4C02]">
+                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M136 296a64 64 0 100-128 64 64 0 000 128zm-4.7-184.8C154.5 45 220.4 16 288 16c87.3 0 162.7 42.1 208 107.8-11.4-1.2-23-1.8-34.9-1.8-63.5 0-117.8 40.5-136 96H240l-28.8-72H168l-2.7-6.8-6.4 16.1zM344 360a64 64 0 100-128 64 64 0 000 128zM315.6 235.2c16-43.2 46.1-76.3 84.8-97.9C369.8 119.5 330.4 112 288 112c-47.5 0-93.7 13.5-133.4 38.6l-32.9 20.3L153 252.7l-4.7 11.8L120 288l1.4 3.6 28.9 72H432c-35 83.9-118.8 144-216 144C151 507.6 57.6 428.1 32 328.2c11.4 1.2 23 1.8 34.9 1.8 47.9 0 91-14.7 127.3-39.7l32.9-20.3L287 259.3l4.7-11.8z"/>
+                </svg>
+                Log In with Strava
+            </button>
+
+            <!-- Divider -->
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">OR</span>
+                </div>
+            </div>
+
+            <!-- CSV Upload Button (Secondary - Gray) -->
+            <button id="csv-upload-button" 
+                    class="w-full inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 transition duration-150 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                Upload CSV File
+            </button>
+
+            <p class="text-xs text-gray-500 mt-4">
+                📁 Hit API limit? Upload your activities.csv from<br>
+                Strava Settings → My Account → Download Your Account
+            </p>
+
+            <p id="status-message" class="mt-4 text-sm text-gray-500 hidden">Checking authentication status...</p>
+        </div>
+        
+        <!-- Dashboard Placeholder (Initially Hidden) -->
+        <div id="dashboard-section" class="hidden text-left">
+            <p class="text-lg font-semibold text-green-700">✅ Authentication Successful!</p>
+            <p class="text-gray-600">Processing your data...</p>
+        </div>
+    </div>
+
+    <script>
+        // OAuth Configuration
+        const CLIENT_ID = "184259"; 
+        const REDIRECT_URI = "https://v9j112adnk.execute-api.eu-central-1.amazonaws.com/strava_callback"; 
+        const SCOPE = "read,activity:read_all"; 
+        const AUTHORIZE_URL = "https://www.strava.com/oauth/authorize";
+        
+        const loginButton = document.getElementById('strava-login-button');
+        const csvButton = document.getElementById('csv-upload-button');
+        const authSection = document.getElementById('auth-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const statusMessage = document.getElementById('status-message');
+
+        // Strava OAuth Login
+        loginButton.addEventListener('click', () => {
+            const authLink = `${AUTHORIZE_URL}?` +
+                `client_id=${CLIENT_ID}` +
+                `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+                `&response_type=code` +
+                `&scope=${SCOPE}` +
+                `&approval_prompt=force`;
+            window.location.href = authLink;
+        });
+
+        // CSV Upload Redirect
+        csvButton.addEventListener('click', () => {
+            window.location.href = 'https://strava-analytics-dashboard-pau.s3.eu-central-1.amazonaws.com/csv_upload.html';
+        });
+
+        // Check for Strava callback
+        function checkStravaResponse() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const error = params.get('error');
+            const status = params.get('status');
+            const athlete_id = params.get('success');
+
+            if (status === 'success' && athlete_id) {
+                authSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+            } else if (code) {
+                authSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+            } else if (error || status === 'error') {
+                statusMessage.textContent = `Authorization failed. Error: ${error}. Please try again.`;
+                statusMessage.classList.remove('hidden');
+                statusMessage.classList.add('text-red-600');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', checkStravaResponse);
+    </script>
+</body>
+</html>

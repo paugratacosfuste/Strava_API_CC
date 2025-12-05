@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - Running Analytics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --strava-orange: #FC4C02;
+            --strava-black: #000000;
+            --strava-dark-gray: #1a1a1a;
+            --strava-medium-gray: #242424;
+            --strava-light-gray: #363636;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --gold: #FFD700;
+            --silver: #C0C0C0;
+            --bronze: #CD7F32;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            background: var(--strava-black);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--strava-dark-gray), var(--strava-medium-gray));
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 5px solid var(--strava-orange);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            color: var(--strava-orange);
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .back-button {
+            display: inline-block;
+            background: var(--strava-orange);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(252, 76, 2, 0.3);
+        }
+
+        .distance-section {
+            background: var(--strava-dark-gray);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid var(--strava-light-gray);
+        }
+
+        .distance-title {
+            font-size: 24px;
+            color: var(--strava-orange);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th {
+            background: var(--strava-medium-gray);
+            color: var(--strava-orange);
+            padding: 15px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .leaderboard-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--strava-light-gray);
+        }
+
+        .leaderboard-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .leaderboard-table tr:hover {
+            background: var(--strava-medium-gray);
+        }
+
+        .rank {
+            font-weight: bold;
+            font-size: 18px;
+            width: 60px;
+            text-align: center;
+        }
+
+        .rank-1 { color: var(--gold); }
+        .rank-2 { color: var(--silver); }
+        .rank-3 { color: var(--bronze); }
+
+        .time {
+            color: var(--strava-orange);
+            font-weight: 600;
+        }
+
+        .pace {
+            color: var(--text-secondary);
+        }
+
+        .no-data {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .loading-spinner {
+            border: 4px solid var(--strava-light-gray);
+            border-top: 4px solid var(--strava-orange);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-box {
+            background: #ff4444;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="dashboard.html" class="back-button">← Back to Dashboard</a>
+
+        <div class="header">
+            <h1>🏆 Leaderboard</h1>
+            <p class="subtitle">Top 5 Runners by Distance</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading leaderboard data...</p>
+        </div>
+
+        <div id="error" class="error-box" style="display: none;"></div>
+
+        <div id="leaderboardContent"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://u686ugpbm5.execute-api.eu-central-1.amazonaws.com/prod/leaderboard';
+
+        const distances = ['400m', '1K', '5K', '10K', 'Half Marathon', 'Marathon'];
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                displayLeaderboard(data);
+
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Failed to load leaderboard data. Please try again later.';
+            }
+        }
+
+        function displayLeaderboard(data) {
+            const container = document.getElementById('leaderboardContent');
+            container.innerHTML = '';
+
+            distances.forEach(distance => {
+                const section = document.createElement('div');
+                section.className = 'distance-section';
+
+                const title = document.createElement('h2');
+                title.className = 'distance-title';
+                title.textContent = distance;
+                section.appendChild(title);
+
+                const efforts = data[distance] || [];
+
+                if (efforts.length === 0) {
+                    const noData = document.createElement('div');
+                    noData.className = 'no-data';
+                    noData.textContent = 'No data available yet';
+                    section.appendChild(noData);
+                } else {
+                    const table = document.createElement('table');
+                    table.className = 'leaderboard-table';
+
+                    // FIXED: Use athlete_name instead of athlete_id
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Athlete</th>
+                                <th>Time</th>
+                                <th>Pace</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${efforts.map((effort, index) => `
+                                <tr>
+                                    <td class="rank rank-${index + 1}">${index + 1}</td>
+                                    <td>${effort.athlete_name || effort.athlete_id}</td>
+                                    <td class="time">${effort.time_formatted}</td>
+                                    <td class="pace">${effort.pace_formatted}/km</td>
+                                    <td>${effort.date}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+
+                    section.appendChild(table);
+                }
+
+                container.appendChild(section);
+            });
+        }
+
+        // Load leaderboard on page load
+        document.addEventListener('DOMContentLoaded', loadLeaderboard);
+    </script>
+</body>
+</html>

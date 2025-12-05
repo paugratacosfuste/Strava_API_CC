@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Next Week Training Plan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --strava-orange: #FC4C02;
+            --strava-dark: #1a1a1a;
+            --strava-card: #242424;
+            --strava-border: #333;
+            --text-muted: #aaa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .title-block h1 {
+            font-size: 30px;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #FC4C02 0%, #FF8800 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title-block p {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .user-badge {
+            background: #242424;
+            padding: 12px 18px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #333;
+        }
+
+        .user-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+        }
+
+        .user-value {
+            font-size: 14px;
+            color: var(--strava-orange);
+            font-weight: 600;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .nav-buttons a,
+        .nav-buttons button {
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid #333;
+            background: #242424;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-buttons a:hover,
+        .nav-buttons button:hover {
+            border-color: var(--strava-orange);
+            transform: translateY(-1px);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .summary-card {
+            background: #242424;
+            border-radius: 16px;
+            padding: 16px 18px;
+            border: 1px solid #333;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .summary-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .summary-sub {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .week-meta {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .plan-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+        }
+
+        .day-card {
+            background: #242424;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .day-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .day-date {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .badge-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid #444;
+            color: #ccc;
+        }
+
+        .badge-type {
+            border-color: var(--strava-orange);
+            color: var(--strava-orange);
+        }
+
+        .badge-intensity {
+            border-color: #888;
+        }
+
+        .distance {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .distance span {
+            font-size: 12px;
+            font-weight: 400;
+            color: #aaa;
+            margin-left: 3px;
+        }
+
+        .description {
+            font-size: 13px;
+            color: #ccc;
+            margin-top: 4px;
+        }
+
+        .rest {
+            opacity: 0.7;
+        }
+
+        .section-title {
+            font-size: 16px;
+            margin: 18px 0 8px;
+            color: #eee;
+        }
+
+        .recent-weeks {
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .recent-weeks table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+
+        .recent-weeks th,
+        .recent-weeks td {
+            padding: 6px 4px;
+            text-align: left;
+            font-size: 12px;
+        }
+
+        .recent-weeks th {
+            color: #aaa;
+            border-bottom: 1px solid #333;
+        }
+
+        .recent-weeks td {
+            border-bottom: 1px solid #222;
+        }
+
+        .error-box {
+            background: #6b1d1d;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid #ff4d4d;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .loading {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        @media (max-width: 700px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="title-block">
+            <h1>Next Week Training Plan</h1>
+            <p>Auto-generated from your recent Strava training load.</p>
+        </div>
+        <div class="user-badge">
+            <div>
+                <div class="user-label">Athlete</div>
+                <div class="user-value" id="userLabel">Loading...</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="nav-buttons">
+        <a id="backDashboardBtn" href="#">← Back to Dashboard</a>
+        <a id="leaderboardBtn" href="#">🏆 Leaderboard</a>
+        <a id="docsBtn" href="#">📄 Documentation</a>
+        <button type="button" id="logoutBtn">Logout</button>
+    </div>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <div class="summary-grid" id="summaryGrid" style="display:none;">
+        <div class="summary-card">
+            <div class="summary-label">Base week distance</div>
+            <div class="summary-value" id="baseDistanceValue">- km</div>
+            <div class="summary-sub">Derived from your last non-zero training week.</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Target week distance</div>
+            <div class="summary-value" id="targetDistanceValue">- km</div>
+            <div class="summary-sub">Planned load (+5%) for next week.</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Plan start</div>
+            <div class="summary-value" id="planStartValue">-</div>
+            <div class="summary-sub">Monday of next planned week.</div>
+        </div>
+    </div>
+
+    <div id="weekMeta" class="week-meta"></div>
+
+    <h2 class="section-title">Daily sessions</h2>
+    <div id="planGrid" class="plan-grid"></div>
+
+    <h2 class="section-title">Recent weeks (context)</h2>
+    <div id="recentWeeks" class="recent-weeks"></div>
+
+    <div id="loading" class="loading">Loading training plan...</div>
+</div>
+
+<script>
+    const API_URL = 'https://u686ugpbm5.execute-api.eu-central-1.amazonaws.com/prod';
+    const PLAN_API_URL = API_URL + '/plan';
+
+    function getCurrentAthleteId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlAthleteId = urlParams.get('athlete_id');
+        if (urlAthleteId) {
+            sessionStorage.setItem('current_athlete_id', urlAthleteId);
+            localStorage.setItem('athlete_id', urlAthleteId);
+            return String(urlAthleteId);
+        }
+
+        const sessionAthleteId = sessionStorage.getItem('current_athlete_id');
+        if (sessionAthleteId) {
+            return String(sessionAthleteId);
+        }
+
+        const storedAthleteId = localStorage.getItem('athlete_id');
+        if (storedAthleteId) {
+            sessionStorage.setItem('current_athlete_id', storedAthleteId);
+            return String(storedAthleteId);
+        }
+
+        return null;
+    }
+
+    function showError(msg) {
+        const box = document.getElementById('errorBox');
+        box.textContent = msg;
+        box.style.display = 'block';
+    }
+
+    function hideError() {
+        const box = document.getElementById('errorBox');
+        box.style.display = 'none';
+    }
+
+    function setupNav(athleteId) {
+        const aidParam = athleteId ? '?athlete_id=' + encodeURIComponent(athleteId) : '';
+
+        document.getElementById('backDashboardBtn').href =
+            'dashboard.html' + aidParam;
+        document.getElementById('leaderboardBtn').href =
+            'leaderboard.html' + aidParam;
+        document.getElementById('docsBtn').href =
+            'documentation.html';
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = 'input_page.html';
+        });
+    }
+
+    function renderPlan(plan) {
+        const summaryGrid = document.getElementById('summaryGrid');
+        const baseDistanceValue = document.getElementById('baseDistanceValue');
+        const targetDistanceValue = document.getElementById('targetDistanceValue');
+        const planStartValue = document.getElementById('planStartValue');
+        const weekMeta = document.getElementById('weekMeta');
+        const planGrid = document.getElementById('planGrid');
+        const recentWeeksDiv = document.getElementById('recentWeeks');
+
+        summaryGrid.style.display = 'grid';
+
+        baseDistanceValue.textContent = plan.base_week_distance_km.toFixed(1) + ' km';
+        targetDistanceValue.textContent = plan.target_week_distance_km.toFixed(1) + ' km';
+        planStartValue.textContent = plan.plan_week_start;
+
+        weekMeta.textContent =
+            'Plan generated at ' + new Date(plan.generated_at).toLocaleString() +
+            ' based on your last weeks of training.';
+
+        planGrid.innerHTML = '';
+        (plan.sessions || []).forEach(session => {
+            const card = document.createElement('div');
+            const isRest = !session.planned_distance_km || session.planned_distance_km === 0;
+            card.className = 'day-card' + (isRest ? ' rest' : '');
+
+            card.innerHTML = `
+                <div class="day-header">
+                    <div class="day-name">${session.day}</div>
+                    <div class="day-date">${session.date}</div>
+                </div>
+                <div class="badge-row">
+                    <span class="badge badge-type">${session.type}</span>
+                    <span class="badge badge-intensity">Intensity: ${session.intensity}</span>
+                </div>
+                <div class="distance">
+                    ${isRest ? 'Rest' : session.planned_distance_km.toFixed(1) + ' km'}
+                    ${isRest ? '' : '<span>planned</span>'}
+                </div>
+                <div class="description">${session.description}</div>
+            `;
+            planGrid.appendChild(card);
+        });
+
+        // Recent weeks table
+        const recent = plan.recent_weeks || [];
+        if (recent.length === 0) {
+            recentWeeksDiv.textContent = 'No historical weeks available.';
+        } else {
+            let html = '<table><thead><tr>' +
+                '<th>Week start (Mon)</th>' +
+                '<th>Distance (km)</th>' +
+                '<th>Time (h)</th>' +
+                '</tr></thead><tbody>';
+
+            recent.forEach(w => {
+                html += `<tr>
+                    <td>${w.week_start}</td>
+                    <td>${w.distance_km.toFixed(1)}</td>
+                    <td>${w.time_hours.toFixed(1)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            recentWeeksDiv.innerHTML = html;
+        }
+    }
+
+    async function loadPlan() {
+        const loading = document.getElementById('loading');
+        const athleteId = getCurrentAthleteId();
+
+        if (!athleteId) {
+            loading.style.display = 'none';
+            showError('No athlete ID found. Please login via Strava or upload CSV first.');
+            return;
+        }
+
+        document.getElementById('userLabel').textContent =
+            athleteId.startsWith('csv_')
+                ? 'CSV user: ' + athleteId.replace('csv_', '')
+                : 'OAuth user ID: ' + athleteId;
+
+        setupNav(athleteId);
+        hideError();
+
+        try {
+            const resp = await fetch(PLAN_API_URL + '?athlete_id=' + encodeURIComponent(athleteId));
+            const text = await resp.text();
+            let data;
+
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error('Invalid JSON response from /plan');
+            }
+
+            if (!resp.ok) {
+                const msg = data && data.error ? data.error : ('HTTP ' + resp.status);
+                throw new Error(msg);
+            }
+
+            loading.style.display = 'none';
+            renderPlan(data);
+
+        } catch (err) {
+            console.error('Error loading plan:', err);
+            loading.style.display = 'none';
+            showError('Failed to load training plan: ' + err.message);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPlan);
+</script>
+</body>
+</html>
